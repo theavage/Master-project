@@ -1,0 +1,17 @@
+digraph "Model Setup" {
+	"054df9c3-9d18-4cdc-ba22-9fc685169144" [label=MultiCompartmentModel]
+	"e850b2cc-9067-4d3d-a5a7-b2b6293f8f69" [label=S4SphereGaussianPhaseApproximation]
+	"e850b2cc-9067-4d3d-a5a7-b2b6293f8f69" -> "054df9c3-9d18-4cdc-ba22-9fc685169144"
+	"db5c8ec2-faed-4053-8e90-15637b43e843" [label=diameter]
+	"db5c8ec2-faed-4053-8e90-15637b43e843" -> "e850b2cc-9067-4d3d-a5a7-b2b6293f8f69"
+	"f975eb3b-808a-4b26-adb9-a23ea3cb2a22" [label=G1Ball]
+	"f975eb3b-808a-4b26-adb9-a23ea3cb2a22" -> "054df9c3-9d18-4cdc-ba22-9fc685169144"
+	"c21891c5-c793-4b8b-82f9-e9b00300027c" [label=lambda_iso]
+	"c21891c5-c793-4b8b-82f9-e9b00300027c" -> "f975eb3b-808a-4b26-adb9-a23ea3cb2a22"
+	"bf5ba38f-b31d-4179-b4b0-90ed3fbdc9ef" [label=C1Stick]
+	"bf5ba38f-b31d-4179-b4b0-90ed3fbdc9ef" -> "054df9c3-9d18-4cdc-ba22-9fc685169144"
+	"70a8561b-766b-476d-9347-ff4910601187" [label=mu]
+	"70a8561b-766b-476d-9347-ff4910601187" -> "bf5ba38f-b31d-4179-b4b0-90ed3fbdc9ef"
+	"25544ce3-49d2-4564-8978-e22a465e9bbc" [label=lambda_par]
+	"25544ce3-49d2-4564-8978-e22a465e9bbc" -> "bf5ba38f-b31d-4179-b4b0-90ed3fbdc9ef"
+}
