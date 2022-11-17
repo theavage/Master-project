@@ -1,7 +1,8 @@
 import numpy as np
 import torch
+from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
-from dmipy.core.modeling_framework import MultiCompartmentModel, MultiCompartmentSphericalHarmonicsModel
+from dmipy.core.modeling_framework import MultiCompartmentModel
 
 def squash(param, p_min, p_max):
     """
@@ -16,7 +17,6 @@ def squash(param, p_min, p_max):
 
 def verdict_model_dmipy():
 
-
     sphere = sphere_models.S4SphereGaussianPhaseApproximation(diffusion_constant=1.2e-9)
     ball = gaussian_models.G1Ball()
     stick = cylinder_models.C1Stick()
@@ -26,3 +26,12 @@ def verdict_model_dmipy():
     verdict_mod.set_fixed_parameter('G1Ball_1_lambda_iso', 2e-9) #2
     verdict_mod.set_parameter_optimization_bounds('C1Stick_1_lambda_par', [3.05e-9, 10e-9])
 
+    return verdict_mod
+
+def simulate_signal_dmipy(path_to_acqscheme, parameter_array):
+
+    verdict_model = verdict_model_dmipy()
+    scheme= acquisition_scheme_from_schemefile(path_to_acqscheme)
+    sim_signal = verdict_model.simulate_signal(scheme,parameter_array)
+
+    return sim_signal
