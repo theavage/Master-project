@@ -93,7 +93,7 @@ if __name__ == '__main__':
     else: X_train = trainset['X_train_normalised']
  
     if args.s0 == 'yes':
-        num_params = 8
+        num_params = 8 
     else: num_params = 7
 
 

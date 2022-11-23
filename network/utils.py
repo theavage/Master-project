@@ -3,6 +3,7 @@ import torch
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
 from dmipy.core.modeling_framework import MultiCompartmentModel
+from dataset import MyDataset
 
 def squash(param, p_min, p_max):
     """
@@ -35,3 +36,23 @@ def simulate_signal_dmipy(path_to_acqscheme, parameter_array):
     sim_signal = verdict_model.simulate_signal(scheme,parameter_array)
 
     return sim_signal
+
+def get_bvalues(path_to_acqscheme):
+    
+    scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
+    b_values = scheme.bvalues
+    return b_values
+
+def load_data(datapath):
+
+    if datapath.endswith('npz'):
+        data = np.load(datapath)
+        data = data['arr_0']
+    elif datapath.endswith('npy'):
+        data = np.load(datapath)
+    else:
+        raise Exception("Wrong dataset format: must be numpy file")
+    
+    X_train = MyDataset(data)
+
+    return X_train
