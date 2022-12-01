@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 import torch
 import torch.nn as nn
-from utils import squash, sphere_compartment, stick_compartment
+from utils import squash, sphere_compartment, stick_compartment, fractions_to_1
 from dmipy.signal_models.sphere_models import S4SphereGaussianPhaseApproximation
 
 
@@ -42,6 +42,12 @@ class Net(nn.Module):
         phi = params[:,2].unsqueeze(1)
 
         lambda_par = squash(params[:,3],3e-09,10e-9)
+        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True)
+        
+
+        f_sphere,f_ball,f_stick = fractions_to_1(params[:,4],params[:,5],params[:,6])
+        
+        '''
         f_sphere = squash(params[:,4],0,1)
         f_ball = squash(params[:,5],0,1)
         f_stick = squash(params[:,6],0,1)
@@ -49,8 +55,8 @@ class Net(nn.Module):
         f_ball = 1 - (f_sphere+f_stick)
         f_stick = 1 - (f_sphere+f_ball)
         f_sphere = 1 - (f_stick + f_ball)
-        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True)
-        '''
+        
+        
         lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True)
         lambda_par = torch.full((radii.size()),3e-9,requires_grad=True)
         f_ball = torch.full((radii.size()), 0.3,requires_grad=True)

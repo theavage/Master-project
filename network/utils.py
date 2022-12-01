@@ -185,3 +185,15 @@ def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
     mu_cart = unitsphere2cart_Nd(theta,phi)
     dot = torch.einsum("ij,jk->ki",gradient_directions, mu_cart)
     return torch.exp(-b_values * lambda_par * dot ** 2)
+
+def fractions_to_1(f_sphere,f_ball,f_stick):
+
+    m = torch.nn.Softmax(dim = 0)
+    volume_fractions = torch.stack((f_sphere, f_ball, f_stick))
+    normalized_fractions = m(volume_fractions)
+    f_sphere,f_ball,f_stick = normalized_fractions[0].unsqueeze(1),normalized_fractions[1].unsqueeze(1),normalized_fractions[2].unsqueeze(1)
+
+
+    return f_sphere,f_ball,f_stick
+
+    
