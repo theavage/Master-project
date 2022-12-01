@@ -10,17 +10,14 @@ from tqdm import tqdm
 from model import Net
 from utils import load_data, get_scheme_values
 import matplotlib.pyplot as plt
-from IPython.display import clear_output
-
-
 
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
 parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme", help='Path to acquisition scheme')
 parser.add_argument('--data_path','-X',type=str,default="data/simulated_1024x120.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 16, help='Batch size')
-parser.add_argument('--patience', '-p', type=int,default=50, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=50, help='Number of epochs')
+parser.add_argument('--batch_size', type=int, default = 64, help='Batch size')
+parser.add_argument('--patience', '-p', type=int,default=10, help='Patience')
+parser.add_argument('--epochs', '-e', type=int,default=10, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
 parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/test_model_50_120.pt', help='models/test_model_50_120.pt')
 
@@ -32,17 +29,14 @@ def train_model():
     b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
     net = Net(b_values,gradient_strength,gradient_directions,delta,Delta)
     X_train = load_data(args.data_path)
-    loss_values = []
-    radii_values = []
 
     # Loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr = args.learning_rate)  
-    batch_size = args.batch_size
 
-    num_batches = len(X_train) // batch_size
+    num_batches = len(X_train) // args.batch_size
     trainloader = utils.DataLoader(X_train,
-                                    batch_size = batch_size, 
+                                    batch_size = args.batch_size, 
                                     shuffle = True,
                                     num_workers = 2,
                                     drop_last = True)
@@ -55,7 +49,6 @@ def train_model():
         print("Epoch: {}; Bad epochs: {}".format(epoch, num_bad_epochs))
         net.train()
         running_loss = 0.
-        avg_loss = 0
 
         for i, X_batch in enumerate(tqdm(trainloader), 0):
             optimizer.zero_grad()
@@ -66,9 +59,7 @@ def train_model():
             running_loss += loss.item()
 
         print("Loss: {}".format(running_loss))
-          
-        loss_values.append(running_loss)
-
+        
 
         if running_loss < best:
             print("############### Saving good model ###############################")
@@ -82,8 +73,6 @@ def train_model():
                 break
             print("Done")
 
-    plt.plot(np.array(loss_values),'r')
-    plt.savefig('loss.png')
 
     #plt.plot(radii_values,'r')
     #plt.savefig('radii.png')

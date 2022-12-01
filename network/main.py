@@ -9,5 +9,10 @@ if __name__ == '__main__':
         train_model()
 
     else:
-        pred = make_predictions()
-        np.save('signal.npy',pred)
+        X,radii,f_sphere, f_ball,f_stick = make_predictions()
+        
+        np.save('signal.npy',X)
+        np.save('radii.npy',radii)
+        np.save('f_ball.npy',f_ball)
+        np.save('f_sphere.npy',f_sphere)
+        np.save('f_stick.npy',f_stick)

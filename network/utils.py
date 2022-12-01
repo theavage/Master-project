@@ -5,6 +5,7 @@ from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
 from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 
+path_to_acqscheme = '/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme'
 def squash(param, p_min, p_max):
     """
 
@@ -63,6 +64,11 @@ def get_scheme_values(path_to_acqscheme, no_zero_values=True):
         Delta = torch.FloatTensor(Delta)
     return b_values, gradient_strength, gradient_directions, delta, Delta
 
+def get_shell_values(path_to_acqscheme):
+    scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
+    return scheme.shell_delta.tolist(), scheme.shell_Delta.tolist()
+
+
 def load_data(datapath):
 
     if datapath.endswith('npz'):
@@ -77,12 +83,12 @@ def load_data(datapath):
 
     return X_train
 
-def sphere_attenuation(gradient_strength, delta, Delta, diameter):
+def sphere_attenuation(gradient_strength, delta, Delta, radius):
     """
     Calculates the sphere signal attenuation.
     From DMIPY
     """
-    SPHERE_TRASCENDENTAL_ROOTS = np.r_[
+    SPHERE_TRASCENDENTAL_ROOTS = torch.FloatTensor([
         # 0.,
         2.081575978, 5.940369990, 9.205840145,
         12.40444502, 15.57923641, 18.74264558, 21.89969648,
@@ -110,7 +116,7 @@ def sphere_attenuation(gradient_strength, delta, Delta, diameter):
         289.0196041, 292.1612712, 295.3029367, 298.4446006,
         301.5862631, 304.7279241, 307.8695837, 311.0112420,
         314.1528990
-    ]
+    ])
     const = dict(
     water_diffusion_constant=2.299e-9,  # m^2/s
     water_in_axons_diffusion_constant=1.7e-9,  # m^2/s
@@ -119,7 +125,7 @@ def sphere_attenuation(gradient_strength, delta, Delta, diameter):
 
     D = const['water_in_axons_diffusion_constant']
     gamma = const['water_gyromagnetic_ratio']
-    radius = diameter.detach().numpy() #/ 2
+    radius = radius*1e-6# to meter .detach().numpy() #/ 2
 
     alpha = SPHERE_TRASCENDENTAL_ROOTS / radius
     alpha2 = torch.FloatTensor(alpha ** 2)
@@ -138,12 +144,23 @@ def sphere_attenuation(gradient_strength, delta, Delta, diameter):
             ) / (alpha2D)
         )
     )
-    E = np.exp(
+    E = torch.exp(
         first_factor *
         summands.sum()
     )
 
     return E.item()
+
+def sphere_compartment(g, delta, Delta, radius):
+
+    E_sphere = torch.zeros(64,120)
+    # for every unique combination get the perpendicular attenuation
+    
+    for i in range(len(radius)):
+        for j in range(len(g)):
+            E_sphere[i,j] = sphere_attenuation(g[j],delta[j],Delta[j],radius[i])
+
+    return E_sphere
 
 def unitsphere2cart_Nd(theta,phi):
     """Optimized function deicated to convert 1D unit sphere coordinates
@@ -157,7 +174,7 @@ def unitsphere2cart_Nd(theta,phi):
     mu_cart, Nd array of size (..., 3)
         mu in cartesian coordinates, as x, y, z = mu_cart
 """
-    mu_cart = torch.zeros(3,16)
+    mu_cart = torch.zeros(3,64)
     sintheta = torch.sin(theta)
     mu_cart[0,:] = torch.squeeze(sintheta * torch.cos(phi))
     mu_cart[1,:] = torch.squeeze(sintheta * torch.sin(phi))

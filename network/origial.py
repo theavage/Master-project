@@ -6,6 +6,8 @@ if __name__ == '__main__':
     import torch.optim as optim
     import torch.utils.data as utils
     from tqdm import tqdm
+    from dataset import MyDataset
+    from utils import get_scheme_values
     
     # define functions
 
@@ -68,14 +70,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description= 'Ball and stick model')
     parser.add_argument('--trainset', '-trs', type=int, help='Input training set, eg 1 or 2')
     parser.add_argument('--prenormalised', '-prn', type=str, help='Type yes to use data normalised w.r.t. highest TI b=0 image')
-    parser.add_argument('--learningrate', '-lr', type=float, help='Learning rate')
-    parser.add_argument('--batchsize', '-bs', type=int, help='Batch size')
-    parser.add_argument('--patience', '-p', type=int, help='Patience')
-    parser.add_argument('--dropout', '-d', type=float, help='Dropout (0-1)')
+    parser.add_argument('--learningrate', '-lr', default = 0.0001,type=float, help='Learning rate')
+    parser.add_argument('--batchsize', '-bs', default = 32,type=int, help='Batch size')
+    parser.add_argument('--patience', '-p', default = 10,type=int, help='Patience')
+    parser.add_argument('--dropout', '-d',default=0, type=float, help='Dropout (0-1)')
     parser.add_argument('--s0', '-s', type=str, help='yes for s0, no for without')
     args = parser.parse_args()
 
-   
+    '''
     path = '/Users/jpl/documents/code/ibsc_project/datasets/'
 
     dataset1 = np.load(path+"dataset1.npz")
@@ -91,12 +93,27 @@ if __name__ == '__main__':
     if args.prenormalised == 'no':
         X_train = trainset['X_train_raw']
     else: X_train = trainset['X_train_normalised']
- 
+    '''
+
     if args.s0 == 'yes':
         num_params = 8 
     else: num_params = 7
 
+    def load_data(datapath):
 
+        if datapath.endswith('npz'):
+            data = np.load(datapath)
+            data = data['arr_0']
+        elif datapath.endswith('npy'):
+            data = np.load(datapath)
+        else:
+            raise Exception("Wrong dataset format: must be numpy file")
+        
+        X_train = MyDataset(data)
+        
+        return X_train
+
+    X_train = load_data('data/simulated_1024x120.npy')
 
     class Net(nn.Module):
         def __init__(self, ti_no0, gradient_directions_no0, b_values_no0):
@@ -114,6 +131,7 @@ if __name__ == '__main__':
         def forward(self, X):
             if args.dropout != 0:
                 X = self.dropout(X)
+            X = X.to(torch.float32)
             params = torch.abs(self.encoder(X))
             t1_ball_uns = params[:, 0]
             t1_ball = squash(t1_ball_uns, 0.010, 5.0)
@@ -139,9 +157,10 @@ if __name__ == '__main__':
             return X, t1_ball, t1_stick, lambda_par, lambda_iso, mu_cart, Fp, s0
 
     def train_model():
-        b_values = trainset['b_values']
-        ti = trainset['ti']
-        n = trainset['gradient_directions']
+        b_values, _,n,_,ti = get_scheme_values('/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme')
+        #b_values = trainset['b_values']
+        #ti = trainset['ti']
+        #n = trainset['gradient_directions']
         b_values_no0 = torch.FloatTensor(b_values)
         ti_no0 = torch.FloatTensor(ti)
         gradient_directions_no0 = torch.FloatTensor(n)
@@ -150,8 +169,8 @@ if __name__ == '__main__':
         criterion = nn.MSELoss()
         optimizer = optim.Adam(net.parameters(), lr = args.learningrate)  
         batch_size = args.batchsize
-        num_batches = len(X_train) // batch_size
-        trainloader = utils.DataLoader(torch.from_numpy(X_train.astype(np.float32)),
+        #num_batches = len(X_train) // batch_size
+        trainloader = utils.DataLoader(X_train,
                                         batch_size = batch_size, 
                                         shuffle = True,
                                         num_workers = 2,

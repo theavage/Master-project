@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 import torch
 import torch.nn as nn
-from utils import squash, sphere_attenuation, stick_compartment
+from utils import squash, sphere_compartment, stick_compartment
 from dmipy.signal_models.sphere_models import S4SphereGaussianPhaseApproximation
 
 
@@ -28,7 +28,7 @@ class Net(nn.Module):
 
         for i in range(3): 
             self.fc_layers.extend([nn.Linear(len(b_values_no0), len(b_values_no0)), nn.ELU()])
-        self.encoder = nn.Sequential(*self.fc_layers, nn.Linear(len(b_values_no0), args.num_params))
+        self.encoder = nn.Sequential(*self.fc_layers, nn.Linear(len(b_values_no0), 7))
         if args.dropout != 0:
             self.dropout = nn.Dropout(args.dropout)
 
@@ -37,8 +37,7 @@ class Net(nn.Module):
             X = self.dropout(X)
         X = X.to(torch.float32)
         params = torch.abs(self.encoder(X))
-
-        radii = squash(params[:,0],0.02e-6,30e-6)# Limits as set for sim data
+        radii = squash(params[:,0],0.02,30)# Limits as set for sim data
         theta = params[:,1].unsqueeze(1)
         phi = params[:,2].unsqueeze(1)
 
@@ -50,17 +49,19 @@ class Net(nn.Module):
         f_ball = 1 - (f_sphere+f_stick)
         f_stick = 1 - (f_sphere+f_ball)
         f_sphere = 1 - (f_stick + f_ball)
-
-        ball = torch.exp(-self.b_values_no0*2e-9)
+        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True)
+        '''
+        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True)
+        lambda_par = torch.full((radii.size()),3e-9,requires_grad=True)
+        f_ball = torch.full((radii.size()), 0.3,requires_grad=True)
+        f_sphere = torch.full((radii.size()),4.,requires_grad=True)
+        f_stick = torch.full((radii.size()),0.3,requires_grad=True)
+        theta = torch.full((radii.size()),2.,requires_grad=True)
+        phi = torch.full((radii.size()),2.,requires_grad=True)
+        '''
+        ball = torch.exp(-self.b_values_no0*lambda_iso)
         stick = stick_compartment(self.b_values_no0,lambda_par,self.gradient_directions,theta,phi)
-
-        E_sphere = []
-        for i in range(120):
-            E_sphere_i = sphere_attenuation(self.gradient_strength[i], self.delta[i], self.Delta[i], radii)
-            E_sphere.append(E_sphere_i)
-
-        sphere = torch.FloatTensor(E_sphere)
+        sphere = sphere_compartment(self.gradient_strength, self.delta, self.Delta, radii)
 
         X =  f_stick*stick + f_sphere*sphere +f_ball*ball
- 
         return X, radii, theta, phi, lambda_par, f_sphere, f_ball, f_stick
