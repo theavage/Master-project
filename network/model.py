@@ -8,7 +8,6 @@ from dmipy.signal_models.sphere_models import S4SphereGaussianPhaseApproximation
 
 parser = argparse.ArgumentParser(description= 'VERDICT model')
 parser.add_argument('--learningrate', '-lr', type=float, help='Learning rate')
-parser.add_argument('--batchsize', '-bs', type=int, help='Batch size')
 parser.add_argument('--patience', '-p', type=int, help='Patience')
 parser.add_argument('--dropout', '-d', default=0, type=float, help='Dropout (0-1)')
 parser.add_argument('--num_params', '-np', type=int,default=7, help='yes for s0, no for without')
@@ -26,8 +25,10 @@ class Net(nn.Module):
         self.delta = delta
         self.Delta = Delta
 
-        for i in range(3): 
+        for i in range(3):
+            print(len(b_values_no0))
             self.fc_layers.extend([nn.Linear(len(b_values_no0), len(b_values_no0)), nn.ELU()])
+            print('hade')
         self.encoder = nn.Sequential(*self.fc_layers, nn.Linear(len(b_values_no0), 7))
         if args.dropout != 0:
             self.dropout = nn.Dropout(args.dropout)
@@ -70,4 +71,5 @@ class Net(nn.Module):
         sphere = sphere_compartment(self.gradient_strength, self.delta, self.Delta, radii)
 
         X =  f_stick*stick + f_sphere*sphere +f_ball*ball
+
         return X, radii, theta, phi, lambda_par, f_sphere, f_ball, f_stick

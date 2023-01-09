@@ -7,17 +7,17 @@ import torch
 
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
-parser.add_argument('--data_path','-X',type=str,default="data/simulated_65536x10.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 64, help='Batch size')
+parser.add_argument('--data_path','-X',type=str,default="data/simulated_1024x160.npy",help="Path to training data")
+parser.add_argument('--batch_size', type=int, default = 144, help='Batch size')
 parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme", help='Path to acquisition scheme')
-parser.add_argument('--model_path', '-mpt',type=str, default = "/Users/theavage/Documents/Master/Master-project/network/models/test_model_20_120.pt", help='Path to model')
+parser.add_argument('--model_path', '-mpt',type=str, default = "/Users/theavage/Documents/Master/Master-project/network/models/test_model_10_MRI.pt", help='Path to model')
 
 args = parser.parse_args()
 
 def predict(model, data):
 
     model.eval()  # testing mode
-    X_res = np.empty((args.batch_size,120))
+    X_res = np.empty((args.batch_size,160))
     radii_res = np.empty((args.batch_size,1))
     f_sphere_res = np.empty((args.batch_size,1))
     f_stick_res = np.empty((args.batch_size,1))

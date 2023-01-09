@@ -1,5 +1,5 @@
-
-def make_bval_bvec(scheme_path, filename):
+import numpy as np
+def make_bval_bvec(scheme_path):
 
     gyro = 267.522
 
@@ -14,23 +14,12 @@ def make_bval_bvec(scheme_path, filename):
 
             bval = (gyro)**2 * float(data[3])**2 * float(data[5])**2 * (float(data[4])-float(data[5])/3)*1000000
             bvals.append(bval)
-            print(bval)
         
-    with open(filename+'.bvec','w') as f:
-        for i in range(len(x)):
-            f.write(str(x[i])+' ')
-        f.write('\n')
-        for i in range(len(y)):
-            f.write(str(y[i])+' ')
-        f.write('\n')
-        for i in range(len(z)):
-            f.write(str(z[i])+' ')
+        np.save('gx.npy',x)
+        np.save('gy.npy',y)
+        np.save('gz.npy',z)
 
-    with open(filename+'.bval','w') as f:
-        for bval in bvals:
-            f.write(str(bval)+' ')
-
-path = "/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme"
+path = "/Users/theavage/Documents/Master/Master-project/new.scheme"
 filename = 'GS55'
 
 def make_g_D_d(scheme_path):
@@ -58,8 +47,8 @@ def make_g_D_d(scheme_path):
         for i in range(len(d)):
             f.write(str(d[i])+' ')
     
-    with open('out/TE'+'.txt','w') as f:
-        for i in range(len(TE)):
-            f.write(str(TE[i])+' ')
+    np.save('G.npy',G)
+    np.save('D.npy',D)
+    np.save('d.npy',d)
 
 make_g_D_d(path)

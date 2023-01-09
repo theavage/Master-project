@@ -5,7 +5,7 @@ from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
 from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 
-path_to_acqscheme = '/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme'
+path_to_acqscheme = 'new.scheme'
 def squash(param, p_min, p_max):
     """
 
@@ -38,8 +38,9 @@ def simulate_signal_dmipy(path_to_acqscheme, parameter_array):
 
     return sim_signal
 
-def get_scheme_values(path_to_acqscheme, no_zero_values=True):
-    
+def get_scheme_values(path_to_acqscheme, no_zero_values=False):
+    '''
+    If scheme not too long, use this:
     scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
 
     b_values = scheme.bvalues
@@ -47,6 +48,12 @@ def get_scheme_values(path_to_acqscheme, no_zero_values=True):
     gradient_directions = scheme.gradient_directions
     delta = scheme.delta
     Delta = scheme.Delta
+    '''
+    b_values = np.load('bvalues.npy')
+    gradient_strength = np.load('G.npy')
+    gradient_directions = np.load('gradient_directions.npy')
+    delta = np.load('d.npy')
+    Delta = np.load('Delta.npy')
 
     if no_zero_values:
         zero_idx = np.where(gradient_strength==0)
@@ -153,13 +160,12 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
 
 def sphere_compartment(g, delta, Delta, radius):
 
-    E_sphere = torch.zeros(64,120)
+    E_sphere = torch.zeros(144,85096)
     # for every unique combination get the perpendicular attenuation
     
     for i in range(len(radius)):
         for j in range(len(g)):
             E_sphere[i,j] = sphere_attenuation(g[j],delta[j],Delta[j],radius[i])
-
     return E_sphere
 
 def unitsphere2cart_Nd(theta,phi):
@@ -174,7 +180,7 @@ def unitsphere2cart_Nd(theta,phi):
     mu_cart, Nd array of size (..., 3)
         mu in cartesian coordinates, as x, y, z = mu_cart
 """
-    mu_cart = torch.zeros(3,64)
+    mu_cart = torch.zeros(3,144)
     sintheta = torch.sin(theta)
     mu_cart[0,:] = torch.squeeze(sintheta * torch.cos(phi))
     mu_cart[1,:] = torch.squeeze(sintheta * torch.sin(phi))

@@ -13,13 +13,13 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
-parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme", help='Path to acquisition scheme')
-parser.add_argument('--data_path','-X',type=str,default="data/simulated_1024x120.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 64, help='Batch size')
+parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Master-project/new.scheme", help='Path to acquisition scheme')
+parser.add_argument('--data_path','-X',type=str,default="/Users/theavage/Documents/Master/Master-project/simulated_long.npy",help="Path to training data")
+parser.add_argument('--batch_size', type=int, default = 144, help='Batch size')
 parser.add_argument('--patience', '-p', type=int,default=10, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=20, help='Number of epochs')
+parser.add_argument('--epochs', '-e', type=int,default=10, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/test_model_20_120.pt', help='models/test_model_50_120.pt')
+parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/long.pt', help='models/long.pt')
 
 
 args = parser.parse_args()
