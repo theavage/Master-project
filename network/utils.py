@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
 from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
@@ -30,14 +29,6 @@ def verdict_model_dmipy():
 
     return verdict_mod
 
-def simulate_signal_dmipy(path_to_acqscheme, parameter_array):
-
-    verdict_model = verdict_model_dmipy()
-    scheme= acquisition_scheme_from_schemefile(path_to_acqscheme)
-    sim_signal = verdict_model.simulate_signal(scheme,parameter_array)
-
-    return sim_signal
-
 def get_scheme_values(path_to_acqscheme, no_zero_values=False):
     '''
     If scheme not too long, use this:
@@ -49,11 +40,11 @@ def get_scheme_values(path_to_acqscheme, no_zero_values=False):
     delta = scheme.delta
     Delta = scheme.Delta
     '''
-    b_values = np.load('bvalues.npy')
-    gradient_strength = np.load('G.npy')
-    gradient_directions = np.load('gradient_directions.npy')
-    delta = np.load('d.npy')
-    Delta = np.load('Delta.npy')
+    b_values = np.load('data/bvalues.npy')
+    gradient_strength = np.load('data/G.npy')
+    gradient_directions = np.load('data/gradient_directions.npy')
+    delta = np.load('data/d.npy')
+    Delta = np.load('data/Delta.npy')
 
     if no_zero_values:
         zero_idx = np.where(gradient_strength==0)
