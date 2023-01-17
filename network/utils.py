@@ -3,8 +3,10 @@ import torch
 from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
 from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
+from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 
-path_to_acqscheme = 'new.scheme'
+path_to_acqscheme = '/home/thea/Downloads/GS55_long_protocol2.scheme'
+
 def squash(param, p_min, p_max):
     """
 
@@ -29,43 +31,31 @@ def verdict_model_dmipy():
 
     return verdict_mod
 
-def get_scheme_values(path_to_acqscheme, no_zero_values=False):
-    '''
-    If scheme not too long, use this:
-    scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
+def get_scheme_values(long_scheme = False):
 
-    b_values = scheme.bvalues
-    gradient_strength = scheme.gradient_strengths
-    gradient_directions = scheme.gradient_directions
-    delta = scheme.delta
-    Delta = scheme.Delta
-    '''
-    b_values = np.load('data/bvalues.npy')
-    gradient_strength = np.load('data/G.npy')
-    gradient_directions = np.load('data/gradient_directions.npy')
-    delta = np.load('data/d.npy')
-    Delta = np.load('data/Delta.npy')
+    if long_scheme == False:
+        scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
 
-    if no_zero_values:
-        zero_idx = np.where(gradient_strength==0)
-        b_values = torch.FloatTensor(np.delete(b_values,zero_idx))
-        gradient_strength = torch.FloatTensor(np.delete(gradient_strength,zero_idx))
-        gradient_directions = torch.FloatTensor(np.delete(gradient_directions,zero_idx,0))
-        delta = torch.FloatTensor(np.delete(delta,zero_idx))
-        Delta = torch.FloatTensor(np.delete(Delta,zero_idx))
-    
+        b_values = scheme.bvalues
+        gradient_strength = scheme.gradient_strengths
+        gradient_directions = scheme.gradient_directions
+        delta = scheme.delta
+        Delta = scheme.Delta
+
     else:
-        b_values = torch.FloatTensor(b_values)
-        gradient_strength = torch.FloatTensor(gradient_strength)
-        gradient_directions = torch.FloatTensor(gradient_directions)
-        delta = torch.FloatTensor(delta)
-        Delta = torch.FloatTensor(Delta)
+
+        b_values = np.load('data/bvalues.npy')
+        gradient_strength = np.load('data/G.npy')
+        gradient_directions = np.load('data/gradient_directions.npy')
+        delta = np.load('data/d.npy')
+        Delta = np.load('data/Delta.npy')
+
+    b_values = torch.cuda.FloatTensor(b_values)
+    gradient_strength = torch.cuda.FloatTensor(gradient_strength)
+    gradient_directions = torch.cuda.FloatTensor(gradient_directions)
+    delta = torch.cuda.FloatTensor(delta)
+    Delta = torch.cuda.FloatTensor(Delta)
     return b_values, gradient_strength, gradient_directions, delta, Delta
-
-def get_shell_values(path_to_acqscheme):
-    scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
-    return scheme.shell_delta.tolist(), scheme.shell_Delta.tolist()
-
 
 def load_data(datapath):
 
@@ -86,7 +76,7 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
     Calculates the sphere signal attenuation.
     From DMIPY
     """
-    SPHERE_TRASCENDENTAL_ROOTS = torch.FloatTensor([
+    SPHERE_TRASCENDENTAL_ROOTS = torch.cuda.FloatTensor([
         # 0.,
         2.081575978, 5.940369990, 9.205840145,
         12.40444502, 15.57923641, 18.74264558, 21.89969648,
@@ -123,10 +113,10 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
 
     D = const['water_in_axons_diffusion_constant']
     gamma = const['water_gyromagnetic_ratio']
-    radius = radius*1e-6# to meter .detach().numpy() #/ 2
+    radius = (radius*1e-6).to(torch.device("cuda"))# to meter .detach().numpy() #/ 2
 
     alpha = SPHERE_TRASCENDENTAL_ROOTS / radius
-    alpha2 = torch.FloatTensor(alpha ** 2)
+    alpha2 = torch.cuda.FloatTensor(alpha ** 2)
     alpha2D = alpha2 * D
 
     first_factor = -2 * (gamma * gradient_strength) ** 2 / D
@@ -151,13 +141,15 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
 
 def sphere_compartment(g, delta, Delta, radius):
 
-    E_sphere = torch.zeros(144,85096)
+    E_sphere = torch.zeros(64,160)
     # for every unique combination get the perpendicular attenuation
     
     for i in range(len(radius)):
         for j in range(len(g)):
             E_sphere[i,j] = sphere_attenuation(g[j],delta[j],Delta[j],radius[i])
-    return E_sphere
+
+    device = torch.device("cuda")
+    return E_sphere.to(device)
 
 def unitsphere2cart_Nd(theta,phi):
     """Optimized function deicated to convert 1D unit sphere coordinates
@@ -171,7 +163,7 @@ def unitsphere2cart_Nd(theta,phi):
     mu_cart, Nd array of size (..., 3)
         mu in cartesian coordinates, as x, y, z = mu_cart
 """
-    mu_cart = torch.zeros(3,144)
+    mu_cart = torch.zeros(3,64,device=torch.device("cuda"))
     sintheta = torch.sin(theta)
     mu_cart[0,:] = torch.squeeze(sintheta * torch.cos(phi))
     mu_cart[1,:] = torch.squeeze(sintheta * torch.sin(phi))
@@ -181,7 +173,7 @@ def unitsphere2cart_Nd(theta,phi):
 def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
     mu_cart = unitsphere2cart_Nd(theta,phi)
     dot = torch.einsum("ij,jk->ki",gradient_directions, mu_cart)
-    return torch.exp(-b_values * lambda_par * dot ** 2)
+    return torch.exp(-b_values * lambda_par.to(torch.device("cuda")) * dot ** 2)
 
 def fractions_to_1(f_sphere,f_ball,f_stick):
 
@@ -189,8 +181,8 @@ def fractions_to_1(f_sphere,f_ball,f_stick):
     volume_fractions = torch.stack((f_sphere, f_ball, f_stick))
     normalized_fractions = m(volume_fractions)
     f_sphere,f_ball,f_stick = normalized_fractions[0].unsqueeze(1),normalized_fractions[1].unsqueeze(1),normalized_fractions[2].unsqueeze(1)
+    device = torch.device("cuda")
 
-
-    return f_sphere,f_ball,f_stick
+    return f_sphere.to(device),f_ball.to(device),f_stick.to(device)
 
     

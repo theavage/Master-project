@@ -26,9 +26,7 @@ class Net(nn.Module):
         self.Delta = Delta
 
         for i in range(3):
-            print(len(b_values_no0))
             self.fc_layers.extend([nn.Linear(len(b_values_no0), len(b_values_no0)), nn.ELU()])
-            print('hade')
         self.encoder = nn.Sequential(*self.fc_layers, nn.Linear(len(b_values_no0), 7))
         if args.dropout != 0:
             self.dropout = nn.Dropout(args.dropout)
@@ -43,29 +41,11 @@ class Net(nn.Module):
         phi = params[:,2].unsqueeze(1)
 
         lambda_par = squash(params[:,3],3e-09,10e-9)
-        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True)
+        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True,device=torch.device("cuda"))
         
 
         f_sphere,f_ball,f_stick = fractions_to_1(params[:,4],params[:,5],params[:,6])
         
-        '''
-        f_sphere = squash(params[:,4],0,1)
-        f_ball = squash(params[:,5],0,1)
-        f_stick = squash(params[:,6],0,1)
-
-        f_ball = 1 - (f_sphere+f_stick)
-        f_stick = 1 - (f_sphere+f_ball)
-        f_sphere = 1 - (f_stick + f_ball)
-        
-        
-        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True)
-        lambda_par = torch.full((radii.size()),3e-9,requires_grad=True)
-        f_ball = torch.full((radii.size()), 0.3,requires_grad=True)
-        f_sphere = torch.full((radii.size()),4.,requires_grad=True)
-        f_stick = torch.full((radii.size()),0.3,requires_grad=True)
-        theta = torch.full((radii.size()),2.,requires_grad=True)
-        phi = torch.full((radii.size()),2.,requires_grad=True)
-        '''
         ball = torch.exp(-self.b_values_no0*lambda_iso)
         stick = stick_compartment(self.b_values_no0,lambda_par,self.gradient_directions,theta,phi)
         sphere = sphere_compartment(self.gradient_strength, self.delta, self.Delta, radii)

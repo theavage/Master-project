@@ -13,23 +13,24 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
-parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Master-project/new.scheme", help='Path to acquisition scheme')
-parser.add_argument('--data_path','-X',type=str,default="/Users/theavage/Documents/Master/Master-project/simulated_long.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 144, help='Batch size')
-parser.add_argument('--patience', '-p', type=int,default=10, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=10, help='Number of epochs')
+parser.add_argument('--acqscheme', '-trs',type=str, default = "", help='Path to acquisition scheme')
+parser.add_argument('--data_path','-X',type=str,default="/home/thea/Documents/Master-project/data/simulated_1024x160.npy",help="Path to training data")
+parser.add_argument('--batch_size', type=int, default = 64, help='Batch size')
+parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
+parser.add_argument('--epochs', '-e', type=int,default=500, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/long.pt', help='models/long.pt')
+parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Documents/Master-project/network/models/model_160_500.pt', help='models/long.pt')
 
 
 args = parser.parse_args()
 
 def train_model():
 
-    b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
-    net = Net(b_values,gradient_strength,gradient_directions,delta,Delta)
-    X_train = load_data(args.data_path)
+    device = torch.device("cuda")
 
+    b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values())
+    net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
+    X_train = load_data(args.data_path)
     # Loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr = args.learning_rate)  
@@ -52,8 +53,10 @@ def train_model():
 
         for i, X_batch in enumerate(tqdm(trainloader), 0):
             optimizer.zero_grad()
+            X_batch = X_batch.to(device)
             X_pred, radii, theta, phi, lambda_par, f_sphere, f_ball, f_stick = net(X_batch)
-            loss = criterion(X_pred.type(torch.FloatTensor), X_batch.type(torch.FloatTensor))
+            X_pred.to(device)
+            loss = criterion(X_pred.type(torch.cuda.FloatTensor), X_batch.type(torch.cuda.FloatTensor))
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
