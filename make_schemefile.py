@@ -22,7 +22,7 @@ def make_combs():
 
     with open('cropped'+'.scheme','w') as f:
         f.write('VERSION: 1'+"\n") 
-        f.write(str(0)+" "+ str(0)+" "+str(0)+" "+str(0)+" "+str(D[0])+" "+str(d[0])+" "+str(TE[0])+"\n")
+        f.write(str(0)+" "+ str(0)+" "+str(0)+" "+str(0.00)+" "+str(D[0])+" "+str(d[0])+" "+str(TE[0])+"\n")
         for i in range(len(gx)):
             f.write(str(gx[i])+" "+ str(gy[i])+" "+str(gz[i])+" "+str(G[i])+" "+str(D[i])+" "+str(d[i])+" "+str(TE[i])+"\n")
 
