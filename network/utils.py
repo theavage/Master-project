@@ -5,7 +5,7 @@ from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 
-path_to_acqscheme = '/home/thea/Downloads/GS55_long_protocol2.scheme'
+path_to_acqscheme = "/home/thea/Documents/Master-project/data/3466.scheme"
 
 def squash(param, p_min, p_max):
     """
@@ -115,9 +115,16 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
     gamma = const['water_gyromagnetic_ratio']
     radius = (radius*1e-6).to(torch.device("cuda"))# to meter .detach().numpy() #/ 2
 
+    #radius = torch.tile(radius, (160,1,1))
+    #delta = torch.tile(delta, (1,32,1)).reshape(160,32,1)
+    #Delta = torch.tile(Delta, (1,32,1)).reshape(160,32,1)
+    #gradient_strength = torch.tile(gradient_strength, (1,32,1)).reshape(160,32,1)
+
     alpha = SPHERE_TRASCENDENTAL_ROOTS / radius
+    #alpha = alpha.reshape(160,32,100)
     alpha2 = torch.cuda.FloatTensor(alpha ** 2)
     alpha2D = alpha2 * D
+
 
     first_factor = -2 * (gamma * gradient_strength) ** 2 / D
     summands = (
@@ -137,20 +144,20 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
         summands.sum()
     )
 
-    return E.item()
+    return E.squeeze()#.reshape(32,160)
 
 def sphere_compartment(g, delta, Delta, radius):
 
-    E_sphere = torch.zeros(64,160)
+    E_sphere = torch.zeros(32,len(g)).cuda()
     # for every unique combination get the perpendicular attenuation
     
     for i in range(len(radius)):
         for j in range(len(g)):
             E_sphere[i,j] = sphere_attenuation(g[j],delta[j],Delta[j],radius[i])
-
-    device = torch.device("cuda")
-    return E_sphere.to(device)
-
+    
+    return E_sphere.to(torch.device("cuda"))
+    #E_sphere = sphere_attenuation(g, delta, Delta, radius)
+    #return E_sphere
 def unitsphere2cart_Nd(theta,phi):
     """Optimized function deicated to convert 1D unit sphere coordinates
     to cartesian coordinates.
@@ -163,7 +170,7 @@ def unitsphere2cart_Nd(theta,phi):
     mu_cart, Nd array of size (..., 3)
         mu in cartesian coordinates, as x, y, z = mu_cart
 """
-    mu_cart = torch.zeros(3,64,device=torch.device("cuda"))
+    mu_cart = torch.zeros(3,32,device=torch.device("cuda"))
     sintheta = torch.sin(theta)
     mu_cart[0,:] = torch.squeeze(sintheta * torch.cos(phi))
     mu_cart[1,:] = torch.squeeze(sintheta * torch.sin(phi))
