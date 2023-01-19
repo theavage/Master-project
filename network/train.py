@@ -28,7 +28,7 @@ def train_model():
 
     device = torch.device("cuda")
 
-    b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values())
+    b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
     net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
     X_train = load_data(args.data_path)
     # Loss function and optimizer

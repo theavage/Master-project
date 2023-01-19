@@ -5,8 +5,6 @@ from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 
-path_to_acqscheme = "/home/thea/Documents/Master-project/data/3466.scheme"
-
 def squash(param, p_min, p_max):
     """
 
@@ -31,7 +29,7 @@ def verdict_model_dmipy():
 
     return verdict_mod
 
-def get_scheme_values(long_scheme = False):
+def get_scheme_values(path_to_acqscheme,long_scheme = False):
 
     if long_scheme == False:
         scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
