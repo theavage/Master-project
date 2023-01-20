@@ -41,7 +41,7 @@ class Net(nn.Module):
         phi = params[:,2].unsqueeze(1)
 
         lambda_par = squash(params[:,3],3e-09,10e-9)
-        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True,device=torch.device("cuda"))
+        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True,device=torch.device("cpu"))
         
 
         f_sphere,f_ball,f_stick = fractions_to_1(params[:,4],params[:,5],params[:,6])

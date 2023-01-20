@@ -48,11 +48,11 @@ def get_scheme_values(path_to_acqscheme,long_scheme = False):
         delta = np.load('data/d.npy')
         Delta = np.load('data/Delta.npy')
 
-    b_values = torch.cuda.FloatTensor(b_values)
-    gradient_strength = torch.cuda.FloatTensor(gradient_strength)
-    gradient_directions = torch.cuda.FloatTensor(gradient_directions)
-    delta = torch.cuda.FloatTensor(delta)
-    Delta = torch.cuda.FloatTensor(Delta)
+    b_values = torch.FloatTensor(b_values)
+    gradient_strength = torch.FloatTensor(gradient_strength)
+    gradient_directions = torch.FloatTensor(gradient_directions)
+    delta = torch.FloatTensor(delta)
+    Delta = torch.FloatTensor(Delta)
     return b_values, gradient_strength, gradient_directions, delta, Delta
 
 def load_data(datapath):
@@ -74,7 +74,7 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
     Calculates the sphere signal attenuation.
     From DMIPY
     """
-    SPHERE_TRASCENDENTAL_ROOTS = torch.cuda.FloatTensor([
+    SPHERE_TRASCENDENTAL_ROOTS = torch.FloatTensor([
         # 0.,
         2.081575978, 5.940369990, 9.205840145,
         12.40444502, 15.57923641, 18.74264558, 21.89969648,
@@ -103,6 +103,9 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
         301.5862631, 304.7279241, 307.8695837, 311.0112420,
         314.1528990
     ])
+
+    SPHERE_TRASCENDENTAL_ROOTS =  SPHERE_TRASCENDENTAL_ROOTS.tile(len(Delta),1).T
+
     const = dict(
     water_diffusion_constant=2.299e-9,  # m^2/s
     water_in_axons_diffusion_constant=1.7e-9,  # m^2/s
@@ -111,16 +114,10 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
 
     D = const['water_in_axons_diffusion_constant']
     gamma = const['water_gyromagnetic_ratio']
-    radius = (radius*1e-6).to(torch.device("cuda"))# to meter .detach().numpy() #/ 2
-
-    #radius = torch.tile(radius, (160,1,1))
-    #delta = torch.tile(delta, (1,32,1)).reshape(160,32,1)
-    #Delta = torch.tile(Delta, (1,32,1)).reshape(160,32,1)
-    #gradient_strength = torch.tile(gradient_strength, (1,32,1)).reshape(160,32,1)
+    radius = radius*1e-6# to meter .detach().numpy() #/ 2
 
     alpha = SPHERE_TRASCENDENTAL_ROOTS / radius
-    #alpha = alpha.reshape(160,32,100)
-    alpha2 = torch.cuda.FloatTensor(alpha ** 2)
+    alpha2 = torch.FloatTensor(alpha ** 2)
     alpha2D = alpha2 * D
 
 
@@ -142,10 +139,10 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
         summands.sum()
     )
 
-    return E.squeeze()#.reshape(32,160)
+    return E
 
 def sphere_compartment(g, delta, Delta, radius):
-
+    """
     E_sphere = torch.zeros(32,len(g)).cuda()
     # for every unique combination get the perpendicular attenuation
     
@@ -153,9 +150,17 @@ def sphere_compartment(g, delta, Delta, radius):
         for j in range(len(g)):
             E_sphere[i,j] = sphere_attenuation(g[j],delta[j],Delta[j],radius[i])
     
-    return E_sphere.to(torch.device("cuda"))
-    #E_sphere = sphere_attenuation(g, delta, Delta, radius)
-    #return E_sphere
+    return E_sphere.to(torch.device("cpu"))
+    """
+
+    E_sphere = torch.zeros(len(radius),len(g))
+
+    for i in range(len(radius)):
+        E_sphere[i][:] = sphere_attenuation(g, delta, Delta, radius[i])
+
+    return E_sphere
+
+
 def unitsphere2cart_Nd(theta,phi):
     """Optimized function deicated to convert 1D unit sphere coordinates
     to cartesian coordinates.
@@ -168,7 +173,7 @@ def unitsphere2cart_Nd(theta,phi):
     mu_cart, Nd array of size (..., 3)
         mu in cartesian coordinates, as x, y, z = mu_cart
 """
-    mu_cart = torch.zeros(3,32,device=torch.device("cuda"))
+    mu_cart = torch.zeros(3,len(theta),device=torch.device("cpu"))
     sintheta = torch.sin(theta)
     mu_cart[0,:] = torch.squeeze(sintheta * torch.cos(phi))
     mu_cart[1,:] = torch.squeeze(sintheta * torch.sin(phi))
@@ -178,7 +183,7 @@ def unitsphere2cart_Nd(theta,phi):
 def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
     mu_cart = unitsphere2cart_Nd(theta,phi)
     dot = torch.einsum("ij,jk->ki",gradient_directions, mu_cart)
-    return torch.exp(-b_values * lambda_par.to(torch.device("cuda")) * dot ** 2)
+    return torch.exp(-b_values * lambda_par.to(torch.device("cpu")) * dot ** 2)
 
 def fractions_to_1(f_sphere,f_ball,f_stick):
 
@@ -186,7 +191,7 @@ def fractions_to_1(f_sphere,f_ball,f_stick):
     volume_fractions = torch.stack((f_sphere, f_ball, f_stick))
     normalized_fractions = m(volume_fractions)
     f_sphere,f_ball,f_stick = normalized_fractions[0].unsqueeze(1),normalized_fractions[1].unsqueeze(1),normalized_fractions[2].unsqueeze(1)
-    device = torch.device("cuda")
+    device = torch.device("cpu")
 
     return f_sphere.to(device),f_ball.to(device),f_stick.to(device)
 

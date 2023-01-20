@@ -13,20 +13,20 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
-parser.add_argument('--acqscheme', '-trs',type=str, default = "", help='Path to acquisition scheme')
-parser.add_argument('--data_path','-X',type=str,default="/home/thea/Documents/Master-project/data/simulated_1024x160.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 64, help='Batch size')
+parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Master-project/data/3466.scheme", help='Path to acquisition scheme')
+parser.add_argument('--data_path','-X',type=str,default="/Users/theavage/Documents/Master/Master-project/data/simulated_3466.npy",help="Path to training data")
+parser.add_argument('--batch_size', type=int, default = 32, help='Batch size')
 parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=500, help='Number of epochs')
+parser.add_argument('--epochs', '-e', type=int,default=4, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Documents/Master-project/network/models/model_160_500.pt', help='models/long.pt')
-
+parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/model_3466_4_fast.pt', help='models/long.pt')
+parser.add_argument('--device', '-dv', type=str,default='cpu', help='cpu or cuda')
 
 args = parser.parse_args()
 
 def train_model():
 
-    device = torch.device("cuda")
+    device = torch.device(args.device)
 
     b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
     net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
@@ -56,7 +56,7 @@ def train_model():
             X_batch = X_batch.to(device)
             X_pred, radii, theta, phi, lambda_par, f_sphere, f_ball, f_stick = net(X_batch)
             X_pred.to(device)
-            loss = criterion(X_pred.type(torch.cuda.FloatTensor), X_batch.type(torch.cuda.FloatTensor))
+            loss = criterion(X_pred.type(torch.FloatTensor), X_batch.type(torch.FloatTensor))
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
