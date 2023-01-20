@@ -108,13 +108,13 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
 
     const = dict(
     water_diffusion_constant=2.299e-9,  # m^2/s
-    water_in_axons_diffusion_constant=1.7e-9,  # m^2/s
+    water_in_axons_diffusion_constant=1.2e-9,  # m^2/s
     naa_in_axons=.00015e-9,  # m^2 / s
     water_gyromagnetic_ratio=267.513e6)  # 1/(sT)
 
     D = const['water_in_axons_diffusion_constant']
     gamma = const['water_gyromagnetic_ratio']
-    radius = radius*1e-6# to meter .detach().numpy() #/ 2
+    radius = radius# to meter .detach().numpy() #/ 2
 
     alpha = SPHERE_TRASCENDENTAL_ROOTS / radius
     alpha2 = torch.FloatTensor(alpha ** 2)
@@ -183,7 +183,7 @@ def unitsphere2cart_Nd(theta,phi):
 def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
     mu_cart = unitsphere2cart_Nd(theta,phi)
     dot = torch.einsum("ij,jk->ki",gradient_directions, mu_cart)
-    return torch.exp(-b_values * lambda_par.to(torch.device("cpu")) * dot ** 2)
+    return torch.exp(-b_values * lambda_par.to(torch.device("cpu")) * (dot ** 2))
 
 def fractions_to_1(f_sphere,f_ball,f_stick):
 

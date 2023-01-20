@@ -27,7 +27,7 @@ class Net(nn.Module):
 
         for i in range(3):
             self.fc_layers.extend([nn.Linear(len(b_values_no0), len(b_values_no0)), nn.ELU()])
-        self.encoder = nn.Sequential(*self.fc_layers, nn.Linear(len(b_values_no0), 7))
+        self.encoder = nn.Sequential(*self.fc_layers, nn.Linear(len(b_values_no0), 4))
         if args.dropout != 0:
             self.dropout = nn.Dropout(args.dropout)
 
@@ -36,15 +36,15 @@ class Net(nn.Module):
             X = self.dropout(X)
         X = X.to(torch.float32)
         params = torch.abs(self.encoder(X))
-        radii = squash(params[:,0],0.02,30)# Limits as set for sim data
-        theta = params[:,1].unsqueeze(1)
-        phi = params[:,2].unsqueeze(1)
+        radii = squash(params[:,0],0.02e-6,30e-6)# Limits as set for sim data
+        theta = torch.full((radii.size()),1.570796326794897,requires_grad=True,device=torch.device("cpu"))
+        phi = torch.full((radii.size()),0.0,requires_grad=True,device=torch.device("cpu"))
 
-        lambda_par = squash(params[:,3],3e-09,10e-9)
+        #lambda_par = squash(params[:,3],3e-09,10e-9)
+        lambda_par = torch.full((radii.size()),1.2e-9,requires_grad=True,device=torch.device("cpu"))
         lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True,device=torch.device("cpu"))
-        
 
-        f_sphere,f_ball,f_stick = fractions_to_1(params[:,4],params[:,5],params[:,6])
+        f_sphere,f_ball,f_stick = fractions_to_1(params[:,1],params[:,2],params[:,3])
         
         ball = torch.exp(-self.b_values_no0*lambda_iso)
         stick = stick_compartment(self.b_values_no0,lambda_par,self.gradient_directions,theta,phi)
