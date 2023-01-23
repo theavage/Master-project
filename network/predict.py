@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description= 'VERDICT training')
 parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Master-project/data/3466.scheme", help='Path to acquisition scheme')
 parser.add_argument('--data_path','-X',type=str,default="/Users/theavage/Documents/Master/Master-project/data/simulated_3466.npy",help="Path to training data")
 parser.add_argument('--batch_size', type=int, default = 32, help='Batch size')
-parser.add_argument('--model_path', '-mpt',type=str, default = "/Users/theavage/Documents/Master/Master-project/network/models/model_3466_4_fast.pt", help='Path to model')
+parser.add_argument('--model_path', '-mpt',type=str, default = "/Users/theavage/Documents/Master/Master-project/network/models/model_3466_10_fast_test.pt", help='Path to model')
 
 args = parser.parse_args()
 

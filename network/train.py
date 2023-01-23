@@ -17,9 +17,9 @@ parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/D
 parser.add_argument('--data_path','-X',type=str,default="/Users/theavage/Documents/Master/Master-project/data/simulated_3466.npy",help="Path to training data")
 parser.add_argument('--batch_size', type=int, default = 32, help='Batch size')
 parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=4, help='Number of epochs')
+parser.add_argument('--epochs', '-e', type=int,default=10, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/model_3466_4_fast.pt', help='models/long.pt')
+parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/model_3466_50_fast.pt', help='models/long.pt')
 parser.add_argument('--device', '-dv', type=str,default='cpu', help='cpu or cuda')
 
 args = parser.parse_args()

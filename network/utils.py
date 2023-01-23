@@ -114,7 +114,7 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
 
     D = const['water_in_axons_diffusion_constant']
     gamma = const['water_gyromagnetic_ratio']
-    radius = radius# to meter .detach().numpy() #/ 2
+    radius = radius*1e-6# to meter .detach().numpy() #/ 2
 
     alpha = SPHERE_TRASCENDENTAL_ROOTS / radius
     alpha2 = torch.FloatTensor(alpha ** 2)
@@ -136,7 +136,7 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
     )
     E = torch.exp(
         first_factor *
-        summands.sum()
+        summands.sum(axis=0)
     )
 
     return E
