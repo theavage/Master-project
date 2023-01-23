@@ -11,6 +11,8 @@ parser.add_argument('--dropout', '-d', default=0, type=float, help='Dropout (0-1
 
 args = parser.parse_args()
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class Net(nn.Module):
 
     def __init__(self, b_values_no0,gradient_strength,gradient_directions,delta,Delta):
@@ -34,12 +36,12 @@ class Net(nn.Module):
         X = X.to(torch.float32)
         params = torch.abs(self.encoder(X))
         radii = squash(params[:,0],0.02,30)
-        theta = torch.full((radii.size()),1.570796326794897,requires_grad=True,device=torch.device("cpu"))
-        phi = torch.full((radii.size()),0.0,requires_grad=True,device=torch.device("cpu"))
+        theta = torch.full((radii.size()),1.570796326794897,requires_grad=True,device=device)
+        phi = torch.full((radii.size()),0.0,requires_grad=True,device=device)
 
         #lambda_par = squash(params[:,3],3e-09,10e-9)
-        lambda_par = torch.full((radii.size()),1.2e-9,requires_grad=True,device=torch.device("cpu"))
-        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True,device=torch.device("cpu"))
+        lambda_par = torch.full((radii.size()),1.2e-9,requires_grad=True,device=device)
+        lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True,device=device)
 
         f_sphere,f_ball,f_stick = fractions_to_1(params[:,1],params[:,2],params[:,3])
         #f_sphere = params[:,1].unsqueeze(1)

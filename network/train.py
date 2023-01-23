@@ -20,13 +20,12 @@ parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
 parser.add_argument('--epochs', '-e', type=int,default=10, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
 parser.add_argument('--save_path', '-sp', type=str,default='/Users/theavage/Documents/Master/Master-project/network/models/model_3466_50_fast.pt', help='models/long.pt')
-parser.add_argument('--device', '-dv', type=str,default='cpu', help='cpu or cuda')
 
 args = parser.parse_args()
 
 def train_model():
 
-    device = torch.device(args.device)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
     net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)

@@ -5,6 +5,9 @@ from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 def squash(param, p_min, p_max):
     """
 
@@ -173,7 +176,7 @@ def unitsphere2cart_Nd(theta,phi):
     mu_cart, Nd array of size (..., 3)
         mu in cartesian coordinates, as x, y, z = mu_cart
 """
-    mu_cart = torch.zeros(3,len(theta),device=torch.device("cpu"))
+    mu_cart = torch.zeros(3,len(theta),device=device)
     sintheta = torch.sin(theta)
     mu_cart[0,:] = torch.squeeze(sintheta * torch.cos(phi))
     mu_cart[1,:] = torch.squeeze(sintheta * torch.sin(phi))
@@ -183,7 +186,7 @@ def unitsphere2cart_Nd(theta,phi):
 def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
     mu_cart = unitsphere2cart_Nd(theta,phi)
     dot = torch.einsum("ij,jk->ki",gradient_directions, mu_cart)
-    return torch.exp(-b_values * lambda_par.to(torch.device("cpu")) * (dot ** 2))
+    return torch.exp(-b_values * lambda_par.to(device) * (dot ** 2))
 
 def fractions_to_1(f_sphere,f_ball,f_stick):
 
@@ -191,7 +194,6 @@ def fractions_to_1(f_sphere,f_ball,f_stick):
     volume_fractions = torch.stack((f_sphere, f_ball, f_stick))
     normalized_fractions = m(volume_fractions)
     f_sphere,f_ball,f_stick = normalized_fractions[0].unsqueeze(1),normalized_fractions[1].unsqueeze(1),normalized_fractions[2].unsqueeze(1)
-    device = torch.device("cpu")
 
     return f_sphere.to(device),f_ball.to(device),f_stick.to(device)
 
