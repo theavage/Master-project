@@ -7,7 +7,7 @@ from dmipy.signal_models.sphere_models import S4SphereGaussianPhaseApproximation
 
 
 parser = argparse.ArgumentParser(description= 'VERDICT model')
-parser.add_argument('--dropout', '-d', default=0, type=float, help='Dropout (0-1)')
+parser.add_argument('--dropout', '-d', default=0.5, type=float, help='Dropout (0-1)')
 
 args = parser.parse_args()
 
@@ -35,18 +35,15 @@ class Net(nn.Module):
             X = self.dropout(X)
         X = X.to(torch.float32)
         params = torch.abs(self.encoder(X))
-        radii = squash(params[:,0],0.02,30)
+        radii = params[:,0].unsqueeze(1)
         theta = torch.full((radii.size()),1.570796326794897,requires_grad=True,device=device)
         phi = torch.full((radii.size()),0.0,requires_grad=True,device=device)
 
         #lambda_par = squash(params[:,3],3e-09,10e-9)
-        lambda_par = torch.full((radii.size()),1.2e-9,requires_grad=True,device=device)
+        lambda_par = torch.full((radii.size()),8e-9,requires_grad=True,device=device)
         lambda_iso = torch.full((radii.size()),2e-9,requires_grad=True,device=device)
 
         f_sphere,f_ball,f_stick = fractions_to_1(params[:,1],params[:,2],params[:,3])
-        #f_sphere = params[:,1].unsqueeze(1)
-        #f_ball = params[:,2].unsqueeze(1)
-        #f_stick = 1-f_sphere - f_ball
         
         ball = torch.exp(-self.b_values_no0*lambda_iso)
         stick = stick_compartment(self.b_values_no0,lambda_par,self.gradient_directions,theta,phi)
@@ -54,4 +51,4 @@ class Net(nn.Module):
 
         X =  f_stick*stick + f_sphere*sphere +f_ball*ball
 
-        return X, radii, theta, phi, lambda_par, f_sphere, f_ball, f_stick
+        return X, radii, f_sphere, f_ball, f_stick

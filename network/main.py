@@ -11,7 +11,8 @@ if __name__ == '__main__':
     else:
         X,radii,f_sphere, f_ball,f_stick = make_predictions()
 
-        np.save('radii_3466_10_fast.npy',radii)
-        np.save('f_ball_3466_10_fast.npy',f_ball)
-        np.save('f_sphere_3466_10_fast.npy',f_sphere)
-        np.save('f_stick_3466_10_fast.npy',f_stick)
+        np.save('radii_2720.npy',radii)
+        np.save('f_ball_2720.npy',f_ball)
+        np.save('f_sphere_2720.npy',f_sphere)
+        np.save('f_stick_2720.npy',f_stick)
+        np.save('signal_2720.npy',X)

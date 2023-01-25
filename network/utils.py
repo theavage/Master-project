@@ -19,18 +19,6 @@ def squash(param, p_min, p_max):
     unsqueezed_param = squashed_param_tensor.unsqueeze(1)
     return unsqueezed_param
 
-def verdict_model_dmipy():
-
-    sphere = sphere_models.S4SphereGaussianPhaseApproximation(diffusion_constant=1.2e-9)
-    ball = gaussian_models.G1Ball()
-    stick = cylinder_models.C1Stick()
-
-    verdict_mod = MultiCompartmentModel(models=[sphere, ball, stick])
-
-    verdict_mod.set_fixed_parameter('G1Ball_1_lambda_iso', 2e-9) #2
-    verdict_mod.set_parameter_optimization_bounds('C1Stick_1_lambda_par', [3.05e-9, 10e-9])
-
-    return verdict_mod
 
 def get_scheme_values(path_to_acqscheme,long_scheme = False):
 
@@ -110,7 +98,7 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
     SPHERE_TRASCENDENTAL_ROOTS =  SPHERE_TRASCENDENTAL_ROOTS.tile(len(Delta),1).T
 
     const = dict(
-    water_diffusion_constant=2.299e-9,  # m^2/s
+    water_diffusion_constant=1.2e-9,  # m^2/s
     water_in_axons_diffusion_constant=1.2e-9,  # m^2/s
     naa_in_axons=.00015e-9,  # m^2 / s
     water_gyromagnetic_ratio=267.513e6)  # 1/(sT)
@@ -190,9 +178,8 @@ def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
 
 def fractions_to_1(f_sphere,f_ball,f_stick):
 
-    m = torch.nn.Softmax(dim = 0)
-    volume_fractions = torch.stack((f_sphere, f_ball, f_stick))
-    normalized_fractions = m(volume_fractions)
+    fractions = torch.stack((f_sphere, f_ball, f_stick))
+    normalized_fractions = torch.nn.functional.normalize(fractions,p=1,dim=0)
     f_sphere,f_ball,f_stick = normalized_fractions[0].unsqueeze(1),normalized_fractions[1].unsqueeze(1),normalized_fractions[2].unsqueeze(1)
 
     return f_sphere.to(device),f_ball.to(device),f_stick.to(device)
