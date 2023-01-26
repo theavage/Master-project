@@ -14,12 +14,14 @@ import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
 parser.add_argument('--acqscheme', '-trs',type=str, default = "/home/thea/Desktop/Master-project/data/3466.scheme", help='Path to acquisition scheme')
-parser.add_argument('--data_path','-X',type=str,default="/home/thea/Desktop/Master-project/data/simulated_3230.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 85, help='Batch size')
+parser.add_argument('--data_path','-X',type=str,default="/home/thea/Desktop/Master-project/data/simulated_9180_noise.npy",help="Path to training data")
+parser.add_argument('--batch_size', type=int, default = 90, help='Batch size')
 parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=30, help='Number of epochs')
+parser.add_argument('--epochs', '-e', type=int,default=50, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0005, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Desktop/Master-project/network/models/model_2720_2-17_30.pt', help='models/long.pt')
+parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Desktop/Master-project/network/models/model_9180_2-15_50_noise.pt', help='models/long.pt')
+parser.add_argument('--loss_path', '-lp', type=str,default='/home/thea/Desktop/Master-project/network/models/loss_9180_2-15_50_noise.pt', help='models/long.pt')
+
 
 args = parser.parse_args()
 
@@ -30,6 +32,7 @@ def train_model():
     b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
     net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
     X_train = load_data(args.data_path)
+
     # Loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr = args.learning_rate, weight_decay=0)  
@@ -42,6 +45,7 @@ def train_model():
                                     drop_last = True)
     best = 1e16  
     num_bad_epochs = 0
+    losses = []
     patience = args.patience
 
     for epoch in range(args.epochs): 
@@ -61,8 +65,8 @@ def train_model():
             running_loss += loss.item()
 
         print("Loss: {}".format(running_loss))
+        losses.append(running_loss)
         
-
         if running_loss < best:
             print("############### Saving good model ###############################")
             final_model = net.state_dict()
@@ -76,11 +80,7 @@ def train_model():
             print("Done")
 
 
-    #plt.plot(radii_values,'r')
-    #plt.savefig('radii.png')
-
-    #plt.plot(np.array(f_ball_values),'r')
-    #plt.savefig('f_ball.png')
-
     torch.save(final_model, args.save_path)
+    torch.save(losses, args.loss_path)
+    
 

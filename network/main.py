@@ -3,16 +3,16 @@ if __name__ == '__main__':
     from predict import make_predictions
     import numpy as np
 
-    mode = 'pred'
+    mode = 'train'
 
-    if mode == 'train':
-        train_model()
+    #if mode == 'train':
+    train_model()
 
-    else:
-        X,radii,f_sphere, f_ball,f_stick = make_predictions()
+    #else:
+    X,radii,f_sphere, f_ball,f_stick = make_predictions()
 
-        np.save('radii_2720.npy',radii)
-        np.save('f_ball_2720.npy',f_ball)
-        np.save('f_sphere_2720.npy',f_sphere)
-        np.save('f_stick_2720.npy',f_stick)
-        np.save('signal_2720.npy',X)
+    np.save('radii_9180_noise.npy',radii)
+    np.save('f_ball_9180_noise.npy',f_ball)
+    np.save('f_sphere_9180_noise.npy',f_sphere)
+    np.save('f_stick_9180_noise.npy',f_stick)
+    np.save('signal_9180_noise.npy',X)

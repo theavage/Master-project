@@ -8,9 +8,9 @@ import torch
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
 parser.add_argument('--acqscheme', '-trs',type=str, default = "/home/thea/Desktop/Master-project/data/3466.scheme", help='Path to acquisition scheme')
-parser.add_argument('--data_path','-X',type=str,default="/home/thea/Desktop/Master-project/data/simulated_2720.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 85, help='Batch size')
-parser.add_argument('--model_path', '-mpt',type=str, default = "/home/thea/Desktop/Master-project/network/models/model_2720_2-17_30.pt", help='Path to model')
+parser.add_argument('--data_path','-X',type=str,default="/home/thea/Desktop/Master-project/data/simulated_9180_noise.npy",help="Path to training data")
+parser.add_argument('--batch_size', type=int, default = 90, help='Batch size')
+parser.add_argument('--model_path', '-mpt',type=str, default = "/home/thea/Desktop/Master-project/network/models/model_9180_2-15_50_noise.pt", help='Path to model')
 
 args = parser.parse_args()
 
