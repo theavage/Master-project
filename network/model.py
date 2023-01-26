@@ -7,7 +7,7 @@ from dmipy.signal_models.sphere_models import S4SphereGaussianPhaseApproximation
 
 
 parser = argparse.ArgumentParser(description= 'VERDICT model')
-parser.add_argument('--dropout', '-d', default=0.5, type=float, help='Dropout (0-1)')
+parser.add_argument('--dropout', '-d', default=0.7, type=float, help='Dropout (0-1)')
 
 args = parser.parse_args()
 
@@ -17,12 +17,12 @@ class Net(nn.Module):
 
     def __init__(self, b_values_no0,gradient_strength,gradient_directions,delta,Delta):
         super(Net, self).__init__()
-        self.b_values_no0 = b_values_no0
+        self.b_values_no0 = b_values_no0.to(device)
         self.fc_layers = nn.ModuleList()
-        self.gradient_strength = gradient_strength
-        self.gradient_directions = gradient_directions
-        self.delta = delta
-        self.Delta = Delta
+        self.gradient_strength = gradient_strength.to(device)
+        self.gradient_directions = gradient_directions.to(device)
+        self.delta = delta.to(device)
+        self.Delta = Delta.to(device)
 
         for i in range(3):
             self.fc_layers.extend([nn.Linear(len(b_values_no0), len(b_values_no0)), nn.ELU()])
@@ -45,7 +45,7 @@ class Net(nn.Module):
 
         f_sphere,f_ball,f_stick = fractions_to_1(params[:,1],params[:,2],params[:,3])
         
-        ball = torch.exp(-self.b_values_no0*lambda_iso)
+        ball = torch.exp(-self.b_values_no0.to(device)*lambda_iso.to(device))
         stick = stick_compartment(self.b_values_no0,lambda_par,self.gradient_directions,theta,phi)
         sphere = sphere_compartment(self.gradient_strength, self.delta, self.Delta, radii)
 

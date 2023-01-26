@@ -5,6 +5,7 @@ from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -107,8 +108,8 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
     gamma = const['water_gyromagnetic_ratio']
     radius = radius*1e-6# to meter .detach().numpy() #/ 2
 
-    alpha = SPHERE_TRASCENDENTAL_ROOTS / radius
-    alpha2 = torch.FloatTensor(alpha ** 2)
+    alpha = SPHERE_TRASCENDENTAL_ROOTS.to(device) / radius
+    alpha2 = alpha ** 2
     alpha2D = alpha2 * D
 
 
@@ -149,7 +150,7 @@ def sphere_compartment(g, delta, Delta, radius):
     for i in range(len(radius)):
         E_sphere[i][:] = sphere_attenuation(g, delta, Delta, radius[i])
 
-    return E_sphere
+    return E_sphere.to(device)
 
 
 def unitsphere2cart_Nd(theta,phi):
@@ -173,8 +174,8 @@ def unitsphere2cart_Nd(theta,phi):
 
 def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
     mu_cart = unitsphere2cart_Nd(theta,phi)
-    dot = torch.einsum("ij,jk->ki",gradient_directions, mu_cart)
-    return torch.exp(-b_values * lambda_par.to(device) * (dot ** 2))
+    dot = torch.einsum("ij,jk->ki",gradient_directions.to(device), mu_cart.to(device))
+    return torch.exp(-b_values.to(device) * lambda_par.to(device) * (dot ** 2))
 
 def fractions_to_1(f_sphere,f_ball,f_stick):
 
