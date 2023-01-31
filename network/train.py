@@ -16,12 +16,12 @@ parser = argparse.ArgumentParser(description= 'VERDICT training')
 
 parser.add_argument('--acqscheme', '-trs',type=str, default = "/home/thea/Desktop/Master-project/data/3466.scheme", help='Path to acquisition scheme')
 parser.add_argument('--data_path','-X',type=str,default="/home/thea/Desktop/Master-project/data/simulated_9180_noise.npy",help="Path to training data")
-parser.add_argument('--batch_size', type=int, default = 1, help='Batch size')
+parser.add_argument('--batch_size', type=int, default = 360, help='Batch size')
 parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=5, help='Number of epochs')
-parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Desktop/Master-project/network/models/model_9180_2-15_200_noise_2.pt', help='models/long.pt')
-parser.add_argument('--loss_path', '-lp', type=str,default='/home/thea/Desktop/Master-project/network/models/loss_9180_2-15_200_noise_2.pt', help='models/long.pt')
+parser.add_argument('--epochs', '-e', type=int,default=200, help='Number of epochs')
+parser.add_argument('--learning_rate', '-lr', type=float,default=0.0005, help='Learning rate')
+parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Desktop/Master-project/network/models/model_9180_2-15_200_noise_3.pt', help='models/long.pt')
+parser.add_argument('--loss_path', '-lp', type=str,default='/home/thea/Desktop/Master-project/network/models/loss_9180_2-15_200_noise_3.pt', help='models/long.pt')
 
 
 
@@ -37,17 +37,18 @@ def train_model():
 
     # Loss function and optimizer
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(net.parameters(), lr = args.learning_rate, weight_decay=1e-5)  
+    optimizer = optim.Adam(net.parameters(), lr = args.learning_rate, weight_decay=0)  
 
     num_batches = len(X_train) // args.batch_size
     trainloader = utils.DataLoader(X_train,
                                     batch_size = args.batch_size, 
                                     shuffle = True,
-                                    num_workers = 10,
+                                    num_workers = 2,
                                     drop_last = True)
     best = 1e16  
     num_bad_epochs = 0
     losses = []
+    train_acc = []
     patience = args.patience
     for epoch in range(args.epochs): 
         print("-----------------------------------------------------------------")
@@ -82,3 +83,27 @@ def train_model():
 
     torch.save(final_model, args.save_path)
     torch.save(losses, args.loss_path)
+
+
+"""
+args = parser.parse_args()
+X_train = load_data(args.data_path)
+trainloader = utils.DataLoader(X_train,
+                                batch_size = args.batch_size, 
+                                shuffle = True,
+                                num_workers = 2,
+                                drop_last = True)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+args = parser.parse_args()
+b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
+net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
+with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+    with record_function("model_inference"):
+        for step, batch_data in enumerate(trainloader):
+            if step >= (1 + 1 + 3) * 2:
+                break
+            net(batch_data.to(device))
+        prof.step()  # Need to call this at the end of each step to notify profiler of steps' boundary.
+
+print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
+"""

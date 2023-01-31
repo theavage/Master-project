@@ -7,7 +7,7 @@ from dmipy.signal_models.sphere_models import S4SphereGaussianPhaseApproximation
 
 
 parser = argparse.ArgumentParser(description= 'VERDICT model')
-parser.add_argument('--dropout', '-d', default=0.7, type=float, help='Dropout (0-1)')
+parser.add_argument('--dropout', '-d', default=0.5, type=float, help='Dropout (0-1)')
 
 args = parser.parse_args()
 
@@ -35,7 +35,7 @@ class Net(nn.Module):
             X = self.dropout(X)
         X = X.to(torch.float32)
         params = torch.abs(self.encoder(X))
-        radii = params[:,0].unsqueeze(1)
+        radii = params[:,0].unsqueeze(1).to(device)
         theta = torch.full((radii.size()),1.570796326794897,requires_grad=True,device=device)
         phi = torch.full((radii.size()),0.0,requires_grad=True,device=device)
 
