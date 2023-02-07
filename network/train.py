@@ -18,10 +18,10 @@ parser.add_argument('--acqscheme', '-trs',type=str, default = "/home/thea/Deskto
 parser.add_argument('--data_path','-X',type=str,default="/home/thea/Desktop/Master-project/data/simulated_9180_noise.npy",help="Path to training data")
 parser.add_argument('--batch_size', type=int, default = 360, help='Batch size')
 parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=200, help='Number of epochs')
-parser.add_argument('--learning_rate', '-lr', type=float,default=0.0005, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Desktop/Master-project/network/models/model_9180_2-15_200_noise_3.pt', help='models/long.pt')
-parser.add_argument('--loss_path', '-lp', type=str,default='/home/thea/Desktop/Master-project/network/models/loss_9180_2-15_200_noise_3.pt', help='models/long.pt')
+parser.add_argument('--epochs', '-e', type=int,default=100, help='Number of epochs')
+parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
+parser.add_argument('--save_path', '-sp', type=str,default='/home/thea/Desktop/Master-project/network/models/model_9180_2-15_100_noise_5.pt', help='models/long.pt')
+parser.add_argument('--loss_path', '-lp', type=str,default='/home/thea/Desktop/Master-project/network/models/loss_9180_2-15_100_noise_5.pt', help='models/long.pt')
 
 
 
