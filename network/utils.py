@@ -63,7 +63,6 @@ def load_data(datapath):
         raise Exception("Wrong dataset format: must be numpy or nifti file")
     
     X_train = MyDataset(data)
-
     return X_train
 
 def sphere_attenuation(gradient_strength, delta, Delta, radius):
