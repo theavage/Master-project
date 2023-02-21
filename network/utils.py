@@ -4,6 +4,7 @@ from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
 from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
+import dipy
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -54,8 +55,12 @@ def load_data(datapath):
         data = data['arr_0']
     elif datapath.endswith('npy'):
         data = np.load(datapath)
+    elif datapath.endswith('.nii.gz'):
+        data = dipy.data.fetcher.load_nifti_data(datapath)
+        data = np.reshape(data,[data.shape[0]*data.shape[1]*data.shape[2],data.shape[3]])
+        data = data/data.max()
     else:
-        raise Exception("Wrong dataset format: must be numpy file")
+        raise Exception("Wrong dataset format: must be numpy or nifti file")
     
     X_train = MyDataset(data)
 
