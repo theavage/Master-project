@@ -55,10 +55,10 @@ def load_data(datapath):
         data = data['arr_0']
     elif datapath.endswith('npy'):
         data = np.load(datapath)
-    elif datapath.endswith('.nii.gz'):
+    elif datapath.endswith('.nii.gz') or datapath.endswith('.nii'):
         data = dipy.data.fetcher.load_nifti_data(datapath)
-        data = np.reshape(data,[data.shape[0]*data.shape[1]*data.shape[2],data.shape[3]])
-        data = data/data.max()
+        data = data[100:150,100:150,8,:]
+        data = np.reshape(data,[data.shape[0]*data.shape[1],data.shape[2]])
     else:
         raise Exception("Wrong dataset format: must be numpy or nifti file")
     

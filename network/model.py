@@ -32,7 +32,7 @@ class Net(nn.Module):
 
     def forward(self, X):
         if args.dropout != 0:
-            X = self.dropout(X)
+            X = self.dropout(X.float())
         X = X.to(torch.float32)
         params = torch.abs(self.encoder(X))
         radii = params[:,0].unsqueeze(1).to(device)
