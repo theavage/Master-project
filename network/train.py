@@ -14,15 +14,15 @@ torch.cuda.empty_cache()
 
 parser = argparse.ArgumentParser(description= 'VERDICT training')
 
-parser.add_argument('--acqscheme', '-trs',type=str, default = "/Users/theavage/Documents/Master/Data/GS55 - long acquisition/GS55_long_protocol2.scheme", help='Path to acquisition scheme')
-parser.add_argument('--data_path','-X',type=str,default="/Users/theavage/Documents/Master/Data/GS55 - long acquisition/P55_norm.nii",help="Path to training data")
+parser.add_argument('--acqscheme', '-trs',type=str, default = "./data/GS55_long_protocol2.scheme", help='Path to acquisition scheme')
+parser.add_argument('--data_path','-X',type=str,default="./data/simulated_9180_160.npy",help="Path to training data")
+parser.add_argument('--mask_path','-m',type=str,default=None,help="Path to training data")
 parser.add_argument('--batch_size', type=int, default = 45, help='Batch size')
 parser.add_argument('--patience', '-p', type=int,default=20, help='Patience')
-parser.add_argument('--epochs', '-e', type=int,default=20, help='Number of epochs')
+parser.add_argument('--epochs', '-e', type=int,default=50, help='Number of epochs')
 parser.add_argument('--learning_rate', '-lr', type=float,default=0.0001, help='Learning rate')
-parser.add_argument('--save_path', '-sp', type=str,default='./network/models/GS55_optimal.pt', help='models/long.pt')
-parser.add_argument('--loss_path', '-lp', type=str,default='./network/models/loss_GS55_optimal.pt', help='models/long.pt')
-
+parser.add_argument('--save_path', '-sp', type=str,default='./network/models/model_160.pt', help='models/long.pt')
+parser.add_argument('--loss_path', '-lp', type=str,default='./network/models/loss_160.pt', help='models/long.pt')
 
 
 def train_model():
@@ -33,7 +33,7 @@ def train_model():
 
     b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
     net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
-    X_train = load_data(args.data_path)
+    X_train = load_data(args.data_path, args.mask_path)
 
     # Loss function and optimizer
     criterion = nn.MSELoss()
@@ -44,7 +44,7 @@ def train_model():
                                     batch_size = args.batch_size, 
                                     shuffle = True,
                                     num_workers = 2,
-                                    drop_last = True)
+                                    drop_last = False)
     best = 1e16  
     num_bad_epochs = 0
     losses = []

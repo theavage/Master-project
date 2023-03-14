@@ -5,6 +5,7 @@ from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
 import dipy
+import nibabel as nib
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,7 +49,7 @@ def get_scheme_values(path_to_acqscheme,long_scheme = False):
     Delta = torch.FloatTensor(Delta)
     return b_values, gradient_strength, gradient_directions, delta, Delta
 
-def load_data(datapath):
+def load_data(datapath, mask_path=None):
 
     if datapath.endswith('npz'):
         data = np.load(datapath)
@@ -56,9 +57,30 @@ def load_data(datapath):
     elif datapath.endswith('npy'):
         data = np.load(datapath)
     elif datapath.endswith('.nii.gz') or datapath.endswith('.nii'):
-        data = dipy.data.fetcher.load_nifti_data(datapath)
-        data = data[100:150,100:150,8,:]
-        data = np.reshape(data,[data.shape[0]*data.shape[1],data.shape[2]])
+        data = nib.load(datapath).get_fdata()
+
+        if mask_path is not None:
+            img_mask = nib.load(mask_path).get_fdata()
+    
+            masked = data.copy()
+            mask = img_mask == 0
+
+            for i in range(data.shape[-1]):
+                masked[:,:,:,i][mask] = 0
+            
+            data = np.nan_to_num(masked,posinf=1,neginf=0)
+
+            img_mask = np.tile(img_mask[...,np.newaxis],(1,1,1,160))
+            img_mask = np.reshape(img_mask,[img_mask.shape[0]*img_mask.shape[1]*img_mask.shape[2],img_mask.shape[3]])
+
+            data = np.reshape(data,[data.shape[0]*data.shape[1]*data.shape[2],data.shape[3]])
+            
+            
+            mask = MyDataset(img_mask)
+            X_train = MyDataset(data)
+
+            return X_train, mask
+            
     else:
         raise Exception("Wrong dataset format: must be numpy or nifti file")
     
