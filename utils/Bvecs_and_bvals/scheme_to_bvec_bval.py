@@ -19,8 +19,7 @@ def make_bval_bvec(scheme_path):
         np.save('gy.npy',y)
         np.save('gz.npy',z)
 
-path = "/Users/theavage/Documents/Master/Master-project/new.scheme"
-filename = 'GS55'
+path = "/Users/theavage/Documents/Master/Data/GS35/GS35.scheme"
 
 def make_g_D_d(scheme_path):
 
@@ -49,6 +48,6 @@ def make_g_D_d(scheme_path):
     
     np.save('G.npy',G)
     np.save('D.npy',D)
-    np.save('d.npy',d)
+    np.save('delta.npy',d)
 
 make_g_D_d(path)
