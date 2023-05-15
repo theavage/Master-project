@@ -1,3 +1,6 @@
+"""
+Main script for running the network, running train.py and predict.py
+"""
 if __name__ == '__main__':
     from train import train_model
     from predict import make_predictions
