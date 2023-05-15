@@ -1,6 +1,16 @@
-import numpy as np
-from dmipy.core.acquisition_scheme import acquisition_scheme_from_gradient_strengths
+"""
+
+Script for simulating an MRI scheme file.
+
+"""
+
 def make_combs():
+    """
+    
+    Finds all combinations of delta, Delta, gradient strength and gradient directions between set ranges,
+    before they are eritten to a schemefile.
+    
+    """
 
     gx = []
     gy = []

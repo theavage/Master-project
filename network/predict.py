@@ -1,3 +1,10 @@
+"""
+
+Script for predicting tissue parameters, 
+with input functions from utils.py and model.py
+
+"""
+
 import numpy as np
 import argparse
 from model import Net
@@ -17,8 +24,20 @@ parser.add_argument('--mask_path','-m',type=str,default="./data/GS55_all_mask.ni
 args = parser.parse_args()
 
 def predict(model, data, mask):
+    """
 
+    Loops through all batches of the data and creates arrays with predicted parameters.
+    If entire batch consists of signal values 0 = air: prediction is 0, 
+    else it gets the predictions from the saved model.
+
+    args:   model: the trained model
+            data: data loaded with pytorch dataloader
+            mask: brain mask loaded with pytorch dataloader
+
+    """
     model.eval()  # testing mode
+
+    # Initializing parameter prediction arrays
     X_res = np.empty((args.batch_size,data.dataset.data.shape[1]))
     radii_res = np.empty((args.batch_size,1))
     f_sphere_res = np.empty((args.batch_size,1))
@@ -41,9 +60,15 @@ def predict(model, data, mask):
             f_sphere_res = np.concatenate((f_sphere_res, f_sphere.cpu().detach().numpy()), axis=0)
             f_stick_res = np.concatenate((f_stick_res, f_stick.cpu().detach().numpy()), axis=0)
             f_ball_res = np.concatenate((f_ball_res, f_ball.cpu().detach().numpy()), axis=0)
+    
     return X_res[args.batch_size:], radii_res[args.batch_size:,:],f_sphere_res[args.batch_size:],f_ball_res[args.batch_size:], f_stick_res[args.batch_size:]
 
 def make_predictions():
+    """
+
+    Loads model and data with dataloader, and performs the predict function.
+
+    """
         
     b_values, gradient_strength, gradient_directions,delta, Delta = (get_scheme_values(args.acqscheme))
 

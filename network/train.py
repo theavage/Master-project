@@ -1,3 +1,10 @@
+"""
+
+Script training neural network model, 
+with input functions from utils.py and model.py
+
+"""
+
 
 import argparse
 import numpy as np
@@ -9,7 +16,8 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from model import Net
 from utils import load_data, get_scheme_values
-from torch.profiler import profile, record_function, ProfilerActivity
+
+#Release all unoccupied cached memory
 torch.cuda.empty_cache()
 
 parser = argparse.ArgumentParser(description= 'VERDICT training')
@@ -26,49 +34,83 @@ parser.add_argument('--loss_path', '-lp', type=str,default='./network/models/los
 
 
 def train_model():
+    """
+    
+    Does the entire training process, including data loading, passing the
+    data through the network for X epochs and saving the trained model.
+    
+    """
 
     args = parser.parse_args()
 
+    # Makes sure the model runs on GPU if available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # Loading the acquisition scheme values
     b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
+
+    # Loading the model and sends it to device
     net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
+
+    # Dataloading
     X_train = load_data(args.data_path, args.mask_path)
-
-    # Loss function and optimizer
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(net.parameters(), lr = args.learning_rate, weight_decay=0)  
-
-    num_batches = len(X_train) // args.batch_size
     trainloader = utils.DataLoader(X_train,
                                     batch_size = args.batch_size, 
                                     shuffle = True,
                                     num_workers = 2,
                                     drop_last = False)
+    
+    # Loss function and optimizer
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(net.parameters(), lr = args.learning_rate, weight_decay=0) 
+
+    # Coutnters
     best = 1e16  
     num_bad_epochs = 0
-    losses = []
-    train_acc = []
     patience = args.patience
+
+    # List for saving the training loss
+    losses = []
+
+    # Performing the forward and backward passes for X amount of epochs
     for epoch in range(args.epochs): 
+
         print("-----------------------------------------------------------------")
         print("Epoch: {}; Bad epochs: {}".format(epoch, num_bad_epochs))
-        net.train()
-        running_loss = 0.
+        net.train() # Training mode
+        running_loss = 0. # Initializing
+
+        # Looping through all data in batches
         for i, X_batch in enumerate(tqdm(trainloader), 0):
+
+            # zero all gradients
             optimizer.zero_grad()
+
+            # Sending batch to device
             X_batch = X_batch.to(device)
-            X_pred, radii,f_sphere, f_ball, f_stick = net(X_batch)
+
+            # Predictions from model
+            X_pred, radii,f_sphere, f_ball, f_stick = net(X_batch) 
+
+            # Sending predictions ot device
             X_pred.to(device)
-            loss = criterion(X_pred.type(torch.FloatTensor), X_batch.type(torch.FloatTensor))
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
+
+            # Computing loss 
+            loss = criterion(X_pred.type(torch.FloatTensor), X_batch.type(torch.FloatTensor)) 
+
+            # Backward pass
+            loss.backward() 
+
+            # Updating weights
+            optimizer.step() 
+
+            # Updating loss
+            running_loss += loss.item() 
 
         print("Loss: {}".format(running_loss))
         losses.append(running_loss)
         
-        
+        # Decide if traning should be stopped, or if it should go to next epoch
         if running_loss < best:
             print("############### Saving good model ###############################")
             final_model = net.state_dict()
@@ -80,30 +122,7 @@ def train_model():
                 print("Done, best loss: {}".format(best))
                 break
             print("Done")
-
+    
+    # Saving the trained model
     torch.save(final_model, args.save_path)
-    #torch.save(losses, args.loss_path)
 
-
-"""
-args = parser.parse_args()
-X_train = load_data(args.data_path)
-trainloader = utils.DataLoader(X_train,
-                                batch_size = args.batch_size, 
-                                shuffle = True,
-                                num_workers = 2,
-                                drop_last = True)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-args = parser.parse_args()
-b_values, gradient_strength, gradient_directions, delta, Delta = (get_scheme_values(args.acqscheme))
-net = Net(b_values,gradient_strength,gradient_directions,delta,Delta).to(device)
-with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
-    with record_function("model_inference"):
-        for step, batch_data in enumerate(trainloader):
-            if step >= (1 + 1 + 3) * 2:
-                break
-            net(batch_data.to(device))
-        prof.step()  # Need to call this at the end of each step to notify profiler of steps' boundary.
-
-print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
-"""

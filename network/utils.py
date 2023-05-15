@@ -1,29 +1,29 @@
+"""
+
+This scripts defines helping functions for the NN.
+
+"""
+
 import numpy as np
 import torch
-from dmipy.signal_models import sphere_models, cylinder_models, gaussian_models
 from dmipy.core.modeling_framework import MultiCompartmentModel
 from dataset import MyDataset
 from dmipy.core.acquisition_scheme import acquisition_scheme_from_schemefile
-import dipy
 import nibabel as nib
 
-
+# Makes sure the model runs on GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def squash(param, p_min, p_max):
-    """
-
-    torch.clamp Clamps all elements in input into the range [ min, max ],
-    before tensor.unsqueeze returns a new tensor with a dimension of size one inserted at the specified position.
-
-    """
-    squashed_param_tensor =torch.clamp(param, min=p_min, max=p_max)
-    unsqueezed_param = squashed_param_tensor.unsqueeze(1)
-    return unsqueezed_param
-
-
 def get_scheme_values(path_to_acqscheme,long_scheme = False):
+
+    """
+
+    Gets the acquisition scheme values from an acquisition scheme.
+    args:   path_to_acquscheme: string with path to the scheme file
+            long_scheme: if the schemes are long, seperate npy files should be made with all parameters
+
+    """
 
     if long_scheme == False:
         scheme = acquisition_scheme_from_schemefile(path_to_acqscheme)
@@ -42,14 +42,29 @@ def get_scheme_values(path_to_acqscheme,long_scheme = False):
         delta = np.load('data/d.npy')
         Delta = np.load('data/Delta.npy')
 
+    # Converting from numpy arrays to tensor
     b_values = torch.FloatTensor(b_values)
     gradient_strength = torch.FloatTensor(gradient_strength)
     gradient_directions = torch.FloatTensor(gradient_directions)
     delta = torch.FloatTensor(delta)
     Delta = torch.FloatTensor(Delta)
+
     return b_values, gradient_strength, gradient_directions, delta, Delta
 
 def load_data(datapath, mask_path=None):
+
+    """
+
+    With help from dataset.py, this funcions loads the data, and potentially applies mask to ensure
+    that all voxels outside of mask (air voxels) are set to zero, for easier handling of the data.
+    If data is in vivo MRI data, it flattens it from 4D to 2D data. 
+
+    returns: X_data ready for use in model.
+
+    args:   datapath: path to data
+            mask_path: path to potential mask
+
+    """
 
     if datapath.endswith('npz'):
         data = np.load(datapath)
@@ -85,13 +100,19 @@ def load_data(datapath, mask_path=None):
         raise Exception("Wrong dataset format: must be numpy or nifti file")
     
     X_train = MyDataset(data)
+
     return X_train
 
 def sphere_attenuation(gradient_strength, delta, Delta, radius):
+
     """
-    Calculates the sphere signal attenuation.
-    From DMIPY
+    Calculates the sphere signal attenuation. Function is insipred from DMIPY toolbox: 
+    Rutger Fick, Rachid Deriche, & Demian Wassermann. https://github.com/AthenaEPI/dmipy
+    
+    Changes include to make function capable of working with PyTorch tensors.
+
     """
+
     SPHERE_TRASCENDENTAL_ROOTS = torch.FloatTensor([
         # 0.,
         2.081575978, 5.940369990, 9.205840145,
@@ -160,15 +181,16 @@ def sphere_attenuation(gradient_strength, delta, Delta, radius):
     return E
 
 def sphere_compartment(g, delta, Delta, radius):
+
     """
-    E_sphere = torch.zeros(32,len(g)).cuda()
-    # for every unique combination get the perpendicular attenuation
-    
-    for i in range(len(radius)):
-        for j in range(len(g)):
-            E_sphere[i,j] = sphere_attenuation(g[j],delta[j],Delta[j],radius[i])
-    
-    return E_sphere.to(torch.device("cpu"))
+
+    performs sphere_attenuation fuctions on all data. 
+
+    args:   g: gradient directions
+            delta: diffusion time
+            Delta: diffusion duration
+            radius: cell radius
+
     """
 
     E_sphere = torch.zeros(len(radius),len(g))
@@ -180,17 +202,17 @@ def sphere_compartment(g, delta, Delta, radius):
 
 
 def unitsphere2cart_Nd(theta,phi):
-    """Optimized function deicated to convert 1D unit sphere coordinates
-    to cartesian coordinates.
-    Parameters
-    ----------
-    mu : Nd array of size (..., 2)
-        unit sphere coordinates, as theta, phi = mu
-    Returns
-    -------
-    mu_cart, Nd array of size (..., 3)
-        mu in cartesian coordinates, as x, y, z = mu_cart
-"""
+
+    """
+    
+    Converts 1D unit sphere coordinates to cartesian coordinates.
+
+    args:   unit sphere coordinates theta, phi
+
+    Returns: mu, Nd array of size (..., 2)in cartesian coordinates, as x, y, z = mu_cart
+
+    """
+
     mu_cart = torch.zeros(3,len(theta),device=device)
     sintheta = torch.sin(theta)
     mu_cart[0,:] = torch.squeeze(sintheta * torch.cos(phi))
@@ -199,11 +221,39 @@ def unitsphere2cart_Nd(theta,phi):
     return mu_cart
 
 def stick_compartment(b_values, lambda_par,gradient_directions,theta,phi):
+
+    """
+    
+    Converts the 1D unit wphere coordinates to cartesian coordinates, and
+    computed signal from the vascular compartment
+
+    args:   b_values: b-value
+            lambda_par: the vascular diffusion constant
+            gradient_directions: gradient directions
+            theta, phi: unit sphere coordinates 
+    
+    returns: signal from vascular compartment.
+    
+    """
+
     mu_cart = unitsphere2cart_Nd(theta,phi)
     dot = torch.einsum("ij,jk->ki",gradient_directions.to(device), mu_cart.to(device))
+
     return torch.exp(-b_values.to(device) * lambda_par.to(device) * (dot ** 2))
 
+
 def fractions_to_1(f_sphere,f_ball,f_stick):
+
+    """
+    
+    Normalize all three compartmemnts signal so they sum to one.
+
+    args:   f_sphere: Spherical, intracellular volume fraction
+            f_ball: Ball, extracellular-extravascular volume fraction
+            f_vasc: Stick, vascular volume fraction
+        
+    returns: the three volume fractions so that f_sphere + f_ball + f_vasc = 1
+    """
 
     fractions = torch.stack((f_sphere, f_ball, f_stick))
     normalized_fractions = torch.nn.functional.normalize(fractions,p=1,dim=0)
